@@ -1,0 +1,9 @@
+# AgencyDesk design notes
+
+Tenant isolation starts in the data model. Tenant-owned tables carry `agency_id`, and foreign keys plus SQLite triggers reject cross-agency project/client/task relationships. The API does not trust an agency ID from the browser: authorization resolves the requester’s memberships and scopes every lookup to that result. A guessed project, task, client, or attachment ID therefore yields a 404/403 rather than data from another agency. `PRAGMA foreign_keys = ON` is enabled for every connection.
+
+Content visibility is enforced twice. A task, comment, and attachment each carry an independent `is_client_visible` flag; a client query always adds that predicate, including task detail, comments, attachments, search, and dashboard aggregates. Client contacts are linked to a specific agency client through `client_contacts`, so a client user can only access their own client record. Clients may comment only on visible tasks and may approve only visible attachments. They cannot create or edit tasks, log time, or change task status.
+
+Identity is global: `users.email` is unique once, while `agency_memberships` associates that user with an agency and role. This lets one email be an admin for Northstar and Brightwave without duplicated user accounts. Client access is separate from staff membership and is modeled through `client_contacts`; it can represent the same individual as a contact at multiple agencies.
+
+The edge case handled most deliberately is removing a member. `remove_project_member` deletes the assignment record and atomically clears `tasks.assignee_membership_id` for that project. Tasks remain, time history remains, and a removed person cannot keep appearing assigned to work. Invites use a unique `(agency_id,email)` key and an upsert; acceptance checks the invite state and creates the membership through a unique `(agency_id,user_id)` constraint, making resend and double-accept safe.
