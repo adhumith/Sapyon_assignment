@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 from .db import connect, migrate
 
 app=FastAPI(title='AgencyDesk API')
-app.add_middleware(CORSMiddleware, allow_origins=['http://localhost:5173'], allow_methods=['*'], allow_headers=['*'])
+app.add_middleware(CORSMiddleware, allow_origins=['https://sapyon-assignment.vercel.app'], allow_methods=['*'], allow_headers=['*'])
 TOKENS={}
 @app.on_event('startup')
 def startup():
