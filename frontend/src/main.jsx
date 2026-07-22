@@ -1,5 +1,5 @@
 import React,{useEffect,useState} from 'react'; import {createRoot} from 'react-dom/client'; import './style.css';
-const API='http://localhost:8000';
+const API='https://sapyon-assignment.onrender.com';
 function App(){const [auth,setAuth]=useState(null),[email,setEmail]=useState('ada@northstar.test'),[password,setPassword]=useState('demo-password'),[projects,setProjects]=useState([]),[selected,setSelected]=useState(null),[tasks,setTasks]=useState([]),[dash,setDash]=useState(null),[detail,setDetail]=useState(null),[note,setNote]=useState(''); const headers=auth?{Authorization:'Bearer '+auth.token,'Content-Type':'application/json'}:{};
  const load=async()=>{let p=await (await fetch(API+'/projects',{headers})).json();setProjects(p); if(p[0]) open(p[0])}; const open=async p=>{setSelected(p);setDetail(null);setTasks(await (await fetch(API+'/projects/'+p.id+'/tasks',{headers})).json());setDash(await (await fetch(API+'/projects/'+p.id+'/dashboard',{headers})).json())};
  const login=async e=>{e.preventDefault();let r=await fetch(API+'/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});if(!r.ok)return alert('Sign-in failed');setAuth(await r.json())}; useEffect(()=>{if(auth)load()},[auth]);
