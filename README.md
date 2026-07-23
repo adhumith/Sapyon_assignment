@@ -37,6 +37,8 @@ All demo accounts use password `demo-password`.
 | maya@northstar.test | agency_member | Northstar Studio |
 | sam@acme.test | client_user | Acme / Northstar Studio |
 | ada@brightwave.test | agency_admin | Brightwave Agency |
+| liam@brightwave.test | Brightwave Agency | Agency member |
+| grace@globex.test | Globex | Client user |
 
 The same person (Ada) exists once in `users` and has memberships at both agencies, illustrating the cross-agency identity model.
 
