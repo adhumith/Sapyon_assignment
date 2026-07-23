@@ -1,4 +1,4 @@
-import hashlib, secrets, sqlite3
+import hashlib, os, secrets, sqlite3
 from datetime import datetime, timedelta
 from fastapi import FastAPI, Depends, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -6,7 +6,10 @@ from pydantic import BaseModel, Field
 from .db import connect, migrate
 
 app=FastAPI(title='AgencyDesk API')
-app.add_middleware(CORSMiddleware, allow_origins=['https://sapyon-assignment.vercel.app'], allow_methods=['*'], allow_headers=['*'])
+allowed_origins=['https://sapyon-assignment.vercel.app']
+if os.getenv('FRONTEND_ORIGIN'):
+    allowed_origins.extend(origin.strip() for origin in os.environ['FRONTEND_ORIGIN'].split(',') if origin.strip())
+app.add_middleware(CORSMiddleware, allow_origins=allowed_origins, allow_methods=['*'], allow_headers=['*'])
 TOKENS={}
 @app.on_event('startup')
 def startup():
@@ -34,6 +37,7 @@ def task_for(c, tid, actor, visible=True):
     return t,p,staff,contact
 class Login(BaseModel): email:str; password:str
 class TaskIn(BaseModel): title:str; description:str=''; status:str='todo'; priority:str='medium'; due_date:str|None=None; assignee_membership_id:int|None=None; is_client_visible:bool=False
+class TaskStatusIn(BaseModel): status:str
 class CommentIn(BaseModel): body:str=Field(min_length=1); is_client_visible:bool=False
 class TimeIn(BaseModel): minutes:int=Field(gt=0); note:str=''; entry_date:str
 class ApprovalIn(BaseModel): status:str; note:str=''
@@ -68,6 +72,17 @@ def create_task(project_id:int,body:TaskIn,actor=Depends(current)):
     try: cur=c.execute('INSERT INTO tasks(agency_id,project_id,title,description,status,priority,due_date,assignee_membership_id,is_client_visible) VALUES(?,?,?,?,?,?,?,?,?)',(p['agency_id'],project_id,body.title,body.description,body.status,body.priority,body.due_date,body.assignee_membership_id,int(body.is_client_visible))); c.commit()
     except sqlite3.IntegrityError as e: fail(422,str(e))
     return {'id':cur.lastrowid}
+@app.patch('/tasks/{task_id}/status')
+def update_task_status(task_id:int,body:TaskStatusIn,actor=Depends(current)):
+    if body.status not in ('todo','in_progress','done'): fail(422,'Invalid task status')
+    c=connect(); _,_,staff,contact=task_for(c,task_id,actor)
+    if not staff or contact: fail()
+    c.execute('UPDATE tasks SET status=? WHERE id=?',(body.status,task_id)); c.commit(); return {'ok':True}
+@app.delete('/tasks/{task_id}')
+def delete_task(task_id:int,actor=Depends(current)):
+    c=connect(); _,_,staff,contact=task_for(c,task_id,actor)
+    if not staff or staff['role']!='agency_admin' or contact: fail()
+    c.execute('DELETE FROM tasks WHERE id=?',(task_id,)); c.commit(); return {'ok':True}
 @app.get('/tasks/{task_id}')
 def task(task_id:int,actor=Depends(current)):
     c=connect(); t,_,_,contact=task_for(c,task_id,actor); result=dict(t); result['comments']=[dict(x) for x in c.execute('SELECT * FROM comments WHERE task_id=?'+(' AND is_client_visible=1' if contact else ''),(task_id,)).fetchall()]; result['attachments']=[dict(x) for x in c.execute('SELECT * FROM attachments WHERE task_id=?'+(' AND is_client_visible=1' if contact else ''),(task_id,)).fetchall()]; c.close(); return result

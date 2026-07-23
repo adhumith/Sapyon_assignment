@@ -57,3 +57,6 @@ The tests exercise cross-tenant reads/writes, client visibility filtering, clien
 ## API authentication
 
 `POST /auth/login` returns a short-lived opaque bearer token in this demo. Send it as `Authorization: Bearer <token>`. All protected endpoints independently scope database queries by the authenticated actor—not by client-provided agency IDs.
+
+
+
