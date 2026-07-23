@@ -126,3 +126,7 @@ def remove_member(project_id:int,membership_id:int,actor=Depends(current)):
     c=connect(); _,staff,_=project_for(c,project_id,actor)
     if not staff or staff['role']!='agency_admin': fail()
     c.execute('BEGIN'); c.execute('DELETE FROM project_members WHERE project_id=? AND membership_id=?',(project_id,membership_id)); c.execute('UPDATE tasks SET assignee_membership_id=NULL WHERE project_id=? AND assignee_membership_id=?',(project_id,membership_id)); c.commit(); return {'ok':True}
+
+@app.get('/health')
+def health():
+    return {'status':'ok'}
