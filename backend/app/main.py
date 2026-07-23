@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 from .db import connect, migrate
 
 app=FastAPI(title='AgencyDesk API')
-allowed_origins=['https://sapyon-assignment.vercel.app']
+allowed_origins=['https://sapyon-assignment.vercel.app','https://dharani2403.github.io']
 if os.getenv('FRONTEND_ORIGIN'):
     allowed_origins.extend(origin.strip() for origin in os.environ['FRONTEND_ORIGIN'].split(',') if origin.strip())
 app.add_middleware(CORSMiddleware, allow_origins=allowed_origins, allow_methods=['*'], allow_headers=['*'])
